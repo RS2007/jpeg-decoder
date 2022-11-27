@@ -1,51 +1,4 @@
 #!/bin/python3.8
-import numpy as np
-
-
-def genY(r, g, b):
-    y = 16 + (((r << 6) + (r << 1) + (g << 7) + g + (b << 4) + (b << 3) + b) >> 8)
-    # (can vectorize look into later)
-    # y = ((0.257*r + 0.504*g + (0.098)*b)) + 16
-    return y
-
-
-def genCb(r, g, b):
-    cb = 128 + (
-        (
-            -((r << 5) + (r << 2) + (r << 1))
-            - ((g << 6) + (g << 3) + (g << 1))
-            + (b << 7)
-            - (b << 4)
-        )
-        >> 8
-    )
-    # (can vectorize look into later)
-    # cb = 128 + ((-0.148)*r - (0.291*g) + (0.439*b))
-    return cb
-
-
-def genCr(r, g, b):
-    cr = 128 + (
-        ((r << 7) - (r << 4) - ((g << 6) + (g << 5) - (g << 1)) - ((b << 4) + (b << 1)))
-        >> 8
-    )
-    # (can vectorize look into later)
-    # cr = 128 + ((0.439*r) - (0.368*g) - (0.071*b))
-    return cr
-
-
-def rgbToycbcr(rgbImg):
-    height, width, _ = rgbImg.shape
-    arr = np.zeros((height, width, 3))
-    for i in range(height):
-        for j in range(width):
-            b, g, r = rgbImg[i][j]
-            arr[i][j] = [
-                genY(r, g, b),
-                genCr(r, g, b),
-                genCb(r, g, b),
-            ]
-    return arr
 
 
 class APP:
@@ -91,6 +44,30 @@ class SOS:
         self.segmentLength = 0
         self.componentCount = 0
         self.componentData = 0
+
+
+class JPEG:
+    def __init__(self):
+        self.SOF = 0
+        self.DHT = 0
+        self.APP = 0
+        self.SOS = 0
+        self.DQT = 0
+
+    @staticmethod
+    def parseImageDataToJPEG(imageDataMap):
+        jpeg = JPEG()
+        for x in list(imageDataMap.items()):
+            key, value = x
+            setattr(jpeg, key, value)
+        return jpeg
+
+
+class HuffmanTable:
+    def __init__(self):
+        self.root = []
+        self.elements = []
+        print("inside huffman")
 
 
 PROPERTIES_APP_BIT_LENGTH = [
@@ -263,12 +240,10 @@ if __name__ == "__main__":
             print("ERROR: Not a jpeg:jfif file")
         while data := int.from_bytes(f.read(2), "big"):
             val = binary_search_markers(data)
-            print(hex(data), val)
             if val == -1 or val["end"]:
                 break
             if val != -1:
                 cl = val["parser"]
-                print(cl)
                 a = ""
                 if "imageDataNext" in val:
                     a, image = cl(f)
@@ -279,4 +254,5 @@ if __name__ == "__main__":
                     finalImage[val["name"]].append(a.__dict__)
             else:
                 print(hex(data))
-    print(finalImage)
+    jpeg = JPEG.parseImageDataToJPEG(finalImage)
+    print(jpeg.DHT)
